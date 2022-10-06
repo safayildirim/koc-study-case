@@ -1,12 +1,12 @@
 package models
 
 type CreateSURLRequest struct {
-	Email string
-	URL   string
+	Email string `json:"email"`
+	URL   string `json:"url"`
 }
 
 type URLMapping struct {
-	ID        int
-	Original  string
-	Shortened string
+	ID          int    `json:"id"`
+	Original    string `json:"original"`
+	ShortenedID string `json:"shortened_id"`
 }

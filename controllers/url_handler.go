@@ -6,28 +6,33 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
 	_ "github.com/golang-jwt/jwt/v4"
 )
 
 type URLHandler struct {
-	urlService URLService
+	urlService   URLService
+	tokenService TokenService
 }
 
 type URLService interface {
 	ShortenURL(request *models.CreateSURLRequest) (string, error)
 	GetURLs() ([]models.URLMapping, error)
+	RedirectURL(shortenURL string) (string, error)
 	DeleteURL(id int) error
 }
 
-func NewURLHandler(urlService URLService) *URLHandler {
-	return &URLHandler{urlService: urlService}
+type TokenService interface {
+	ValidateToken(email string, bearer string) error
+}
+
+func NewURLHandler(urlService URLService, tokenService TokenService) *URLHandler {
+	return &URLHandler{urlService: urlService, tokenService: tokenService}
 }
 
 func (h *URLHandler) RegisterRoutes(app *fiber.App) {
-	app.Group("/api")
 	app.Post("/urls", h.ShortenURL)
 	app.Get("/urls", h.GetURLs)
+	app.Get("/urls/redirect/:id", h.RedirectURL)
 	app.Delete("/urls/:id", h.DeleteURL)
 }
 
@@ -35,12 +40,21 @@ func (h *URLHandler) ShortenURL(ctx *fiber.Ctx) error {
 	var request models.CreateSURLRequest
 	err := ctx.BodyParser(&request)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    err.Error(),
+		}
 	}
 
-	err = validateToken(ctx, request.Email)
+	token := ctx.Get("Authorization")
+	err = h.tokenService.ValidateToken(request.Email, token)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    err.Error(),
+		}
 	}
 
 	shortenedURL, err := h.urlService.ShortenURL(&request)
@@ -49,19 +63,29 @@ func (h *URLHandler) ShortenURL(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(http.StatusCreated).JSON(models.Response{
-		Data:  shortenedURL,
-		Error: "",
+		Data: shortenedURL,
+		Err:  "",
 	})
 }
 
 func (h *URLHandler) GetURLs(ctx *fiber.Ctx) error {
-	email := ctx.Query("email")
+	email := ctx.Get("email")
 	if email == "" {
-		return ctx.Status(http.StatusBadRequest).JSON(models.Response{Error: "email param should be given"})
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "email param should be given",
+		}
 	}
-	err := validateToken(ctx, email)
+
+	token := ctx.Get("Authorization")
+	err := h.tokenService.ValidateToken(email, token)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    err.Error(),
+		}
 	}
 
 	urls, err := h.urlService.GetURLs()
@@ -69,25 +93,39 @@ func (h *URLHandler) GetURLs(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.Status(http.StatusCreated).JSON(models.Response{
-		Data:  urls,
-		Error: "",
+	return ctx.Status(http.StatusOK).JSON(models.Response{
+		Data: urls,
+		Err:  "",
 	})
 }
 
 func (h *URLHandler) DeleteURL(ctx *fiber.Ctx) error {
 	email := ctx.Query("email")
 	if email == "" {
-		return ctx.Status(http.StatusBadRequest).JSON(models.Response{Error: "email param should be given"})
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "email param should be given",
+		}
 	}
-	err := validateToken(ctx, email)
+
+	token := ctx.Get("Authorization")
+	err := h.tokenService.ValidateToken(email, token)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    err.Error(),
+		}
 	}
 
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
-		return ctx.Status(http.StatusBadRequest).JSON(models.Response{Error: "id could not parse"})
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "id could not parse",
+		}
 	}
 
 	err = h.urlService.DeleteURL(id)
@@ -96,17 +134,47 @@ func (h *URLHandler) DeleteURL(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(http.StatusNoContent).JSON(models.Response{
-		Data:  "",
-		Error: "",
+		Data: "",
+		Err:  "",
 	})
 }
 
-func validateToken(ctx *fiber.Ctx, email string) error {
-	token := ctx.Locals("token").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	emailInToken := claims["email"].(string)
-	if emailInToken != email {
-		return ctx.Status(http.StatusBadRequest).JSON(models.Response{Error: "could not authenticated"})
+func (h *URLHandler) RedirectURL(ctx *fiber.Ctx) error {
+	email := ctx.Get("email")
+	if email == "" {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "email param should be given at header",
+		}
 	}
-	return nil
+
+	token := ctx.Get("Authorization")
+	err := h.tokenService.ValidateToken(email, token)
+	if err != nil {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    err.Error(),
+		}
+	}
+
+	id := ctx.Params("id")
+	if id == "" {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "id could not parse",
+		}
+	}
+
+	original, err := h.urlService.RedirectURL(id)
+	if err != nil {
+		return err
+	}
+
+	return ctx.Status(http.StatusOK).JSON(models.Response{
+		Data: original,
+		Err:  "",
+	})
 }

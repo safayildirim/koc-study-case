@@ -23,41 +23,50 @@ func NewAuthHandler(authService AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) RegisterRoutes(app *fiber.App) {
-	app.Group("/api")
-	app.Post("/login", h.signIn)
-	app.Post("/signup", h.signUp)
+	app.Post("/login", h.SignIn)
+	app.Post("/signup", h.SignUp)
 }
 
-func (h *AuthHandler) signIn(ctx *fiber.Ctx) error {
+func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 	var request models.SignInRequest
 	err := ctx.BodyParser(&request)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "cant parse body",
+		}
 	}
+
 	token, err := h.authService.SignIn(&request)
 	if err != nil {
 		return err
 	}
 
 	return ctx.Status(http.StatusOK).JSON(models.Response{
-		Data:  token,
-		Error: "",
+		Data: token,
+		Err:  "",
 	})
 }
 
-func (h *AuthHandler) signUp(ctx *fiber.Ctx) error {
+func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 	var request models.SignUpRequest
 	err := ctx.BodyParser(&request)
 	if err != nil {
-		return err
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "cant parse body",
+		}
 	}
+
 	err = h.authService.SignUp(&request)
 	if err != nil {
 		return err
 	}
 
-	return ctx.Status(http.StatusOK).JSON(models.Response{
-		Data:  "",
-		Error: "",
+	return ctx.Status(http.StatusCreated).JSON(models.Response{
+		Data: "",
+		Err:  "",
 	})
 }

@@ -1,18 +1,18 @@
 package models
 
 type SignInRequest struct {
-	Email    string
-	Password string
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type SignUpRequest struct {
-	Email            string
-	Password         string
-	SubscriptionType int
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	SubscriptionType int    `json:"subscription_type"`
 }
 
 type User struct {
-	Email            string
-	Password         string
-	SubscriptionType int
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	SubscriptionType int    `json:"subscription_type"`
 }
