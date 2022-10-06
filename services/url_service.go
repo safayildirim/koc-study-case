@@ -1,41 +1,46 @@
 package services
 
 import (
-	"fmt"
 	"koc-digital-case/models"
-	"strings"
 )
 
-var baseID int
+var id int
 
 const (
 	LimitForFreeUser    = 1
 	LimitForPremiumUser = 10
-	Alphabet            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	Base                = len(Alphabet)
 )
 
-type URLService struct {
-	urlRepository  URLRepository
-	userRepository UserRepository
-}
+type (
+	URLService struct {
+		urlRepository  URLRepository
+		userRepository UserRepository
+		generator      Generator
+	}
 
-type UserRepository interface {
-	GetUser(email string) (*models.User, error)
-}
+	UserRepository interface {
+		GetUser(email string) (*models.User, error)
+	}
 
-type URLRepository interface {
-	StoreURLMapping(email, original string, id int) error
-	GetUserRemainingBenefits(email string) (int, error)
-	UpdateUserUsage(email string, remaining int) error
-	GetURLs() ([]models.URLMapping, error)
-	GetURL(id int) (string, error)
-	DeleteURL(id int) error
-}
+	Generator interface {
+		Decode(url string) int
+		Encode(id int) string
+	}
 
-func NewURLService(urlRepository URLRepository, userRepository UserRepository) *URLService {
-	baseID = 100000
-	return &URLService{urlRepository: urlRepository, userRepository: userRepository}
+	URLRepository interface {
+		StoreURLMapping(id int, email, original, shortenURL string) error
+		GetUserRemainingBenefits(email string) (int, error)
+		UpdateUserUsage(email string, remaining int) error
+		GetURLs() ([]models.URLMapping, error)
+		GetURL(id int) (string, error)
+		GetShortenedURL(url string) (string, error)
+		DeleteURL(id int) error
+	}
+)
+
+func NewURLService(urlRepository URLRepository, userRepository UserRepository, generator Generator) *URLService {
+	id = 100000
+	return &URLService{urlRepository: urlRepository, userRepository: userRepository, generator: generator}
 }
 
 func (s *URLService) ShortenURL(request *models.CreateSURLRequest) (string, error) {
@@ -57,32 +62,26 @@ func (s *URLService) ShortenURL(request *models.CreateSURLRequest) (string, erro
 		}
 	}
 
-	n := baseID
-	var shortenedURLID string
-	for n > 0 {
-		shortenedURLID = fmt.Sprintf("%s%s", string(Alphabet[n%62]), shortenedURLID)
-		n = n / Base
-	}
-
-	shortenedURL := fmt.Sprintf("%s", shortenedURLID)
-	err = s.urlRepository.StoreURLMapping(request.Email, request.URL, baseID)
+	shortenedURL, err := s.urlRepository.GetShortenedURL(request.URL)
 	if err != nil {
-		return "", err
+		n := id
+		shortenedURL = s.generator.Encode(n)
+		err = s.urlRepository.StoreURLMapping(id, request.Email, request.URL, shortenedURL)
+		if err != nil {
+			return "", err
+		}
+		id++
 	}
 	err = s.urlRepository.UpdateUserUsage(user.Email, userBenefits-1)
 	if err != nil {
 		return "", err
 	}
-	baseID++
 	return shortenedURL, nil
 }
 
 func (s *URLService) RedirectURL(shortenURL string) (string, error) {
-	id := 0
-	for _, c := range shortenURL {
-		id = (id * Base) + strings.Index(Alphabet, string(c))
-	}
-	original, err := s.urlRepository.GetURL(id)
+	decodedID := s.generator.Decode(shortenURL)
+	original, err := s.urlRepository.GetURL(decodedID)
 	if err != nil {
 		return "", err
 	}

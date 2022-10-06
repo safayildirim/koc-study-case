@@ -9,21 +9,23 @@ import (
 	_ "github.com/golang-jwt/jwt/v4"
 )
 
-type URLHandler struct {
-	urlService   URLService
-	tokenService TokenService
-}
+type (
+	URLHandler struct {
+		urlService   URLService
+		tokenService TokenService
+	}
 
-type URLService interface {
-	ShortenURL(request *models.CreateSURLRequest) (string, error)
-	GetURLs() ([]models.URLMapping, error)
-	RedirectURL(shortenURL string) (string, error)
-	DeleteURL(id int) error
-}
+	URLService interface {
+		ShortenURL(request *models.CreateSURLRequest) (string, error)
+		GetURLs() ([]models.URLMapping, error)
+		RedirectURL(shortenURL string) (string, error)
+		DeleteURL(id int) error
+	}
 
-type TokenService interface {
-	ValidateToken(email string, bearer string) error
-}
+	TokenService interface {
+		ValidateToken(email string, bearer string) error
+	}
+)
 
 func NewURLHandler(urlService URLService, tokenService TokenService) *URLHandler {
 	return &URLHandler{urlService: urlService, tokenService: tokenService}
@@ -54,6 +56,14 @@ func (h *URLHandler) ShortenURL(ctx *fiber.Ctx) error {
 			Status: http.StatusBadRequest,
 			Data:   nil,
 			Err:    err.Error(),
+		}
+	}
+
+	if request.Email == "" || request.URL == "" {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "url or email cant be empty",
 		}
 	}
 
@@ -100,7 +110,7 @@ func (h *URLHandler) GetURLs(ctx *fiber.Ctx) error {
 }
 
 func (h *URLHandler) DeleteURL(ctx *fiber.Ctx) error {
-	email := ctx.Query("email")
+	email := ctx.Get("email")
 	if email == "" {
 		return &models.Response{
 			Status: http.StatusBadRequest,
@@ -164,7 +174,7 @@ func (h *URLHandler) RedirectURL(ctx *fiber.Ctx) error {
 		return &models.Response{
 			Status: http.StatusBadRequest,
 			Data:   nil,
-			Err:    "id could not parse",
+			Err:    "cant parse id",
 		}
 	}
 

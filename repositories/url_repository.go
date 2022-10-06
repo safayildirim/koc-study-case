@@ -14,8 +14,9 @@ func NewURLRepository(repository *Repository) *URLRepository {
 	return &URLRepository{repository: repository}
 }
 
-func (r *URLRepository) StoreURLMapping(email, original string, shortenedID int) error {
-	_, err := r.repository.Db.Exec("INSERT INTO urls (email, original, shortened_id) VALUES ($1,$2,$3)", email, original, shortenedID)
+func (r *URLRepository) StoreURLMapping(id int, email, original, shortenURL string) error {
+	_, err := r.repository.Db.Exec("INSERT INTO urls (id, email, original, shortened_url) VALUES ($1,$2,$3,$4)",
+		id, email, original, shortenURL)
 	if err != nil {
 		return &models.Response{
 			Status: 500,
@@ -26,8 +27,29 @@ func (r *URLRepository) StoreURLMapping(email, original string, shortenedID int)
 	return nil
 }
 
+func (r *URLRepository) GetShortenedURL(url string) (string, error) {
+	row := r.repository.Db.QueryRow("SELECT shortened_url FROM urls WHERE original = $1", url)
+	var shortenedID *string
+	err := row.Scan(&shortenedID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", &models.Response{
+				Status: 404,
+				Data:   nil,
+				Err:    "url not found",
+			}
+		}
+		return "", &models.Response{
+			Status: 500,
+			Data:   nil,
+			Err:    err.Error(),
+		}
+	}
+	return *shortenedID, nil
+}
+
 func (r *URLRepository) GetURL(id int) (string, error) {
-	row := r.repository.Db.QueryRow("SELECT original FROM urls WHERE shortened_id = $1", id)
+	row := r.repository.Db.QueryRow("SELECT original FROM urls WHERE id = $1", id)
 	var url *string
 	err := row.Scan(&url)
 	if err != nil {
@@ -97,7 +119,7 @@ func (r *URLRepository) UpdateUserUsage(email string, remaining int) error {
 
 func (r *URLRepository) GetURLs() ([]models.URLMapping, error) {
 	var urlMappings []models.URLMapping
-	rows, err := r.repository.Db.Query("SELECT id, original, shortened_id FROM urls")
+	rows, err := r.repository.Db.Query("SELECT id, original, shortened_url FROM urls")
 	defer rows.Close()
 	if err != nil {
 		return nil, &models.Response{
@@ -108,7 +130,7 @@ func (r *URLRepository) GetURLs() ([]models.URLMapping, error) {
 	}
 	for rows.Next() {
 		var urlMapping models.URLMapping
-		err = rows.Scan(&urlMapping.ID, &urlMapping.Original, &urlMapping.ShortenedID)
+		err = rows.Scan(&urlMapping.ID, &urlMapping.Original, &urlMapping.ShortenedURL)
 		if err != nil {
 			return nil, &models.Response{
 				Status: 500,
@@ -122,12 +144,23 @@ func (r *URLRepository) GetURLs() ([]models.URLMapping, error) {
 }
 
 func (r *URLRepository) DeleteURL(id int) error {
-	_, err := r.repository.Db.Exec("DELETE FROM urls WHERE id=$1", id)
+	res, err := r.repository.Db.Exec("DELETE FROM urls WHERE id=$1", id)
 	if err != nil {
 		return &models.Response{
 			Status: 500,
 			Data:   nil,
 			Err:    err.Error(),
+		}
+	}
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affectedRows == 0 {
+		return &models.Response{
+			Status: 404,
+			Data:   nil,
+			Err:    "id not found",
 		}
 	}
 	return nil

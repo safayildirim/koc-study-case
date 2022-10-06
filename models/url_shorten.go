@@ -6,7 +6,7 @@ type CreateSURLRequest struct {
 }
 
 type URLMapping struct {
-	ID          int    `json:"id"`
-	Original    string `json:"original"`
-	ShortenedID string `json:"shortened_id"`
+	ID           int    `json:"id"`
+	Original     string `json:"original"`
+	ShortenedURL string `json:"shortened_url"`
 }

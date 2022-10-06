@@ -7,20 +7,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct {
-	authRepository AuthRepository
-	tokenMaker     TokenMaker
-}
+type (
+	AuthService struct {
+		authRepository AuthRepository
+		tokenMaker     TokenMaker
+	}
 
-type AuthRepository interface {
-	GetUser(email string) (*models.User, error)
-	CreateUser(user *models.User) error
-	CreateUserUsage(email string, limit int) error
-}
+	AuthRepository interface {
+		GetUser(email string) (*models.User, error)
+		CreateUser(user *models.User) error
+		CreateUserUsage(email string, limit int) error
+	}
 
-type TokenMaker interface {
-	CreateToken(email string) (string, error)
-}
+	TokenMaker interface {
+		CreateToken(email string) (string, error)
+	}
+)
 
 func NewAuthService(authRepository AuthRepository, tokenMaker TokenMaker) *AuthService {
 	return &AuthService{authRepository: authRepository, tokenMaker: tokenMaker}

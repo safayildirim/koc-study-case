@@ -3,7 +3,6 @@ package controllers_test
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"koc-digital-case/controllers"
@@ -63,7 +62,11 @@ func TestShortenURL(t *testing.T) {
 		assert.Nil(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		mockURLService.EXPECT().ShortenURL(&requestBody).Return("", errors.New("error")).Times(1)
+		mockURLService.EXPECT().ShortenURL(&requestBody).Return("", &models.Response{
+			Status: 500,
+			Data:   nil,
+			Err:    "error",
+		}).Times(1)
 		res, err := app.Test(req)
 		assert.Nil(t, err)
 		bodyBytes, _ := io.ReadAll(res.Body)
@@ -73,6 +76,138 @@ func TestShortenURL(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 		assert.Equal(t, nil, actualResponse.Data)
 		assert.Equal(t, "error", actualResponse.Error())
+	})
+
+	t.Run("GivenURLIsEmptyInRequestWhenShortenURLCalledThenShouldReturnError", func(t *testing.T) {
+		requestBody := models.CreateSURLRequest{
+			Email: "safayildirim54@gmail.com",
+			URL:   "",
+		}
+		body, _ := json.Marshal(requestBody)
+		req := httptest.NewRequest(http.MethodPost, "/urls", bytes.NewBuffer(body))
+		token, err := tokenService.CreateToken("safayildirim54@gmail.com")
+		assert.Nil(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, nil, actualResponse.Data)
+		assert.Equal(t, "url or email cant be empty", actualResponse.Error())
+	})
+
+	t.Run("GivenTokenIsInvalidWhenShortenURLCalledThenShouldReturnError", func(t *testing.T) {
+		requestBody := models.CreateSURLRequest{
+			Email: "safayildirim54@gmail.com",
+			URL:   "www.example.com/blablabla",
+		}
+		body, _ := json.Marshal(requestBody)
+		req := httptest.NewRequest(http.MethodPost, "/urls", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, nil, actualResponse.Data)
+		assert.Equal(t, "could not find token at header", actualResponse.Error())
+	})
+}
+
+func TestRedirectURL(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	app := fiber.New(fiber.Config{ErrorHandler: models.ErrorHandler})
+	mockURLService := mocks.NewMockURLService(controller)
+	tokenService := services.NewTokenService("mysecret")
+	urlHandler := controllers.NewURLHandler(mockURLService, tokenService)
+	urlHandler.RegisterRoutes(app)
+
+	t.Run("GivenShortenedURLWhenRedirectURLCalledThenShouldReturnOriginalURL", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/urls/redirect/Aa5", nil)
+		token, err := tokenService.CreateToken("safayildirim54@gmail.com")
+		assert.Nil(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("email", "safayildirim54@gmail.com")
+		mockURLService.EXPECT().RedirectURL("Aa5").Return("www.google.com.tr", nil).Times(1)
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, "www.google.com.tr", actualResponse.Data)
+		assert.Equal(t, "", actualResponse.Error())
+	})
+
+	t.Run("GivenServiceErrorExistWhenRedirectURLCalledThenShouldReturnError", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/urls/redirect/Aa5", nil)
+		token, err := tokenService.CreateToken("safayildirim54@gmail.com")
+		assert.Nil(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("email", "safayildirim54@gmail.com")
+		mockURLService.EXPECT().RedirectURL("Aa5").Return("", &models.Response{
+			Status: 500,
+			Data:   nil,
+			Err:    "error",
+		}).Times(1)
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		assert.Equal(t, nil, actualResponse.Data)
+		assert.Equal(t, "error", actualResponse.Error())
+	})
+
+	t.Run("GivenShortenURLNotExistWhenRedirectURLCalledThenShouldReturnError", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/urls/redirect/Aa5", nil)
+		token, err := tokenService.CreateToken("safayildirim54@gmail.com")
+		assert.Nil(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("email", "safayildirim54@gmail.com")
+		mockURLService.EXPECT().RedirectURL("Aa5").Return("", &models.Response{
+			Status: 404,
+			Data:   nil,
+			Err:    "original url not found",
+		}).Times(1)
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusNotFound, res.StatusCode)
+		assert.Equal(t, nil, actualResponse.Data)
+		assert.Equal(t, "original url not found", actualResponse.Error())
+	})
+
+	t.Run("GivenTokenIsInvalidWhenRedirectURLCalledThenShouldReturnError", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/urls/redirect/Aa5", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("email", "safayildirim54@gmail.com")
+		res, err := app.Test(req)
+		assert.Nil(t, err)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		var actualResponse models.Response
+		err = json.Unmarshal(bodyBytes, &actualResponse)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, nil, actualResponse.Data)
+		assert.Equal(t, "could not find token at header", actualResponse.Error())
 	})
 }
 
@@ -89,22 +224,23 @@ func TestGetURLs(t *testing.T) {
 	t.Run("GivenUserWhenGetURLsCalledThenShouldReturnURLs", func(t *testing.T) {
 		urls := []models.URLMapping{
 			{
-				ID:          0,
-				Original:    "test1",
-				ShortenedID: "test1",
+				ID:           0,
+				Original:     "test1",
+				ShortenedURL: "test1",
 			},
 			{
-				ID:          1,
-				Original:    "test2",
-				ShortenedID: "test2",
+				ID:           1,
+				Original:     "test2",
+				ShortenedURL: "test2",
 			},
 		}
 
-		req := httptest.NewRequest(http.MethodGet, "/urls?email=safayildirim54@gmail.com", nil)
+		req := httptest.NewRequest(http.MethodGet, "/urls", nil)
 		token, err := tokenService.CreateToken("safayildirim54@gmail.com")
 		assert.Nil(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("email", "safayildirim54@gmail.com")
 		mockURLService.EXPECT().GetURLs().Return(urls, nil).Times(1)
 		res, err := app.Test(req)
 		assert.Nil(t, err)
@@ -151,6 +287,7 @@ func TestDeleteURL(t *testing.T) {
 		assert.Nil(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("email", "safayildirim54@gmail.com")
 		mockURLService.EXPECT().DeleteURL(100000).Return(nil).Times(1)
 		res, err := app.Test(req)
 		assert.Nil(t, err)

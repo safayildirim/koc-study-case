@@ -38,7 +38,8 @@ func main() {
 	urlRepository := repositories.NewURLRepository(repository)
 	tokenService := services.NewTokenService(os.Getenv("SECRET"))
 	authService := services.NewAuthService(authRepository, tokenService)
-	urlService := services.NewURLService(urlRepository, authRepository)
+	urlGenerator := services.NewURLGenerator()
+	urlService := services.NewURLService(urlRepository, authRepository, urlGenerator)
 	urlHandler := controllers.NewURLHandler(urlService, tokenService)
 	authHandler := controllers.NewAuthHandler(authService)
 	server := NewServer([]Handler{urlHandler, authHandler})
@@ -50,6 +51,5 @@ func NewServer(handlers []Handler) *Server {
 	for _, handler := range handlers {
 		handler.RegisterRoutes(app)
 	}
-
 	return &Server{app: app}
 }

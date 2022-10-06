@@ -7,14 +7,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type AuthHandler struct {
-	authService AuthService
-}
+type (
+	AuthHandler struct {
+		authService AuthService
+	}
 
-type AuthService interface {
-	SignUp(request *models.SignUpRequest) error
-	SignIn(request *models.SignInRequest) (string, error)
-}
+	AuthService interface {
+		SignUp(request *models.SignUpRequest) error
+		SignIn(request *models.SignInRequest) (string, error)
+	}
+)
 
 func NewAuthHandler(authService AuthService) *AuthHandler {
 	return &AuthHandler{
@@ -35,6 +37,14 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 			Status: http.StatusBadRequest,
 			Data:   nil,
 			Err:    "cant parse body",
+		}
+	}
+
+	if request.Email == "" || request.Password == "" {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "email or password is not valid",
 		}
 	}
 
@@ -60,13 +70,21 @@ func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 		}
 	}
 
+	if request.Email == "" || request.Password == "" {
+		return &models.Response{
+			Status: http.StatusBadRequest,
+			Data:   nil,
+			Err:    "email or password is not valid",
+		}
+	}
+
 	err = h.authService.SignUp(&request)
 	if err != nil {
 		return err
 	}
 
 	return ctx.Status(http.StatusCreated).JSON(models.Response{
-		Data: "",
+		Data: nil,
 		Err:  "",
 	})
 }

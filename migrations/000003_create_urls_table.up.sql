@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS urls(
-    id SERIAL PRIMARY KEY,
+    id integer PRIMARY KEY,
     email VARCHAR (250) NOT NULL,
     original VARCHAR (250) NOT NULL,
-    shortened_id integer NOT NULL
+    shortened_url VARCHAR (50) NOT NULL
 );

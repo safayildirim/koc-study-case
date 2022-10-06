@@ -48,6 +48,21 @@ func (mr *MockURLRepositoryMockRecorder) DeleteURL(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURL", reflect.TypeOf((*MockURLRepository)(nil).DeleteURL), arg0)
 }
 
+// GetShortenedURL mocks base method.
+func (m *MockURLRepository) GetShortenedURL(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetShortenedURL", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetShortenedURL indicates an expected call of GetShortenedURL.
+func (mr *MockURLRepositoryMockRecorder) GetShortenedURL(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortenedURL", reflect.TypeOf((*MockURLRepository)(nil).GetShortenedURL), arg0)
+}
+
 // GetURL mocks base method.
 func (m *MockURLRepository) GetURL(arg0 int) (string, error) {
 	m.ctrl.T.Helper()
@@ -94,17 +109,17 @@ func (mr *MockURLRepositoryMockRecorder) GetUserRemainingBenefits(arg0 interface
 }
 
 // StoreURLMapping mocks base method.
-func (m *MockURLRepository) StoreURLMapping(arg0, arg1 string, arg2 int) error {
+func (m *MockURLRepository) StoreURLMapping(arg0 int, arg1, arg2, arg3 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreURLMapping", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "StoreURLMapping", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StoreURLMapping indicates an expected call of StoreURLMapping.
-func (mr *MockURLRepositoryMockRecorder) StoreURLMapping(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) StoreURLMapping(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLMapping", reflect.TypeOf((*MockURLRepository)(nil).StoreURLMapping), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreURLMapping", reflect.TypeOf((*MockURLRepository)(nil).StoreURLMapping), arg0, arg1, arg2, arg3)
 }
 
 // UpdateUserUsage mocks base method.
