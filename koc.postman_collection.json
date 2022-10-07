@@ -1,0 +1,218 @@
+{
+	"info": {
+		"_postman_id": "b934edc4-698a-4dce-85a1-d1ea39046f84",
+		"name": "koc",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15697814"
+	},
+	"item": [
+		{
+			"name": "Log In",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"safayildirim54@gmail.com\",\r\n    \"password\": \"123456\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sign Up",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"safayildirim54@gmail.com\",\r\n    \"password\": \"123456\",\r\n    \"subscription_type\":1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/signup",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Shorten",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZmF5aWxkaXJpbTU0QGdtYWlsLmNvbSIsImV4cCI6MTY2NTM0NTE4NH0.txNQxMf6oboKJfvJcSSnXtPlikRrT9r-6ufFSW6c8SY",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"safayildirim54@gmail.com\",\r\n    \"url\": \"www.facebook.com.tr\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/urls",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"urls"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Redirect",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZmF5aWxkaXJpbTU0QGdtYWlsLmNvbSIsImV4cCI6MTY2NTM0NTE4NH0.txNQxMf6oboKJfvJcSSnXtPlikRrT9r-6ufFSW6c8SY",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "email",
+						"value": "safayildirim54@gmail.com",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/urls/redirect/Aa4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"urls",
+						"redirect",
+						"Aa4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All URLs",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZmF5aWxkaXJpbTU0QGdtYWlsLmNvbSIsImV4cCI6MTY2NTI2NDk5MH0.AJ_9-_qRJleR-GpjDz9zF0Shmv8OmFXxhZ_BqmTYhzc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "email",
+						"value": "safayildirim54@gmail.com",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/urls",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"urls"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete URL",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZmF5aWxkaXJpbTU0QGdtYWlsLmNvbSIsImV4cCI6MTY2NTI2NDk5MH0.AJ_9-_qRJleR-GpjDz9zF0Shmv8OmFXxhZ_BqmTYhzc",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "email",
+						"value": "safayildirim54@gmail.com",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/urls/100000",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"urls",
+						"100000"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
